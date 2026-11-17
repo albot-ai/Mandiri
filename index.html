@@ -1,0 +1,1900 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>ModulAjar AI - Pustaka SIBI</title>
+
+  <!-- Google Fonts: Inter -->
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet" />
+
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['Inter', 'sans-serif'],
+          },
+          colors: {
+            brand: {
+              50: '#eef2ff',
+              100: '#e0e7ff',
+              200: '#c7d2fe',
+              500: '#6366f1',
+              600: '#4f46e5',
+              700: '#4338ca',
+              800: '#3730a3',
+              900: '#312e81',
+            }
+          }
+        }
+      }
+    };
+  </script>
+
+  <!-- Marked.js CDN untuk merender Markdown menjadi HTML rapi -->
+  <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+
+  <!-- PDF.js CDN untuk membaca dan mengekstrak teks buku PDF SIBI -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+
+  <style>
+    /* Pengaturan tipografi dasar */
+    body {
+      font-family: 'Inter', sans-serif;
+      background-color: #f8fafc;
+      color: #1e293b;
+    }
+
+    /* Styling Dokumen Hasil Modul Ajar (Tampilan seperti kertas A4 bersih) */
+    .modul-document h1 {
+      font-size: 1.5rem;
+      font-weight: 800;
+      color: #1e1b4b;
+      border-bottom: 2px solid #4338ca;
+      padding-bottom: 0.5rem;
+      margin-top: 1.25rem;
+      margin-bottom: 1rem;
+    }
+
+    .modul-document h2 {
+      font-size: 1.2rem;
+      font-weight: 700;
+      color: #312e81;
+      background-color: #eef2ff;
+      padding: 0.5rem 0.75rem;
+      border-left: 4px solid #4338ca;
+      border-radius: 0.375rem;
+      margin-top: 1.5rem;
+      margin-bottom: 0.75rem;
+    }
+
+    .modul-document h3 {
+      font-size: 1.05rem;
+      font-weight: 700;
+      color: #1e293b;
+      margin-top: 1.1rem;
+      margin-bottom: 0.5rem;
+    }
+
+    .modul-document p {
+      margin-bottom: 0.65rem;
+      line-height: 1.65;
+      color: #334155;
+      font-size: 0.95rem;
+    }
+
+    .modul-document ul {
+      list-style-type: disc;
+      padding-left: 1.5rem;
+      margin-bottom: 0.85rem;
+      color: #334155;
+      font-size: 0.95rem;
+    }
+
+    .modul-document ol {
+      list-style-type: decimal;
+      padding-left: 1.5rem;
+      margin-bottom: 0.85rem;
+      color: #334155;
+      font-size: 0.95rem;
+    }
+
+    .modul-document li {
+      margin-bottom: 0.35rem;
+      line-height: 1.6;
+    }
+
+    .modul-document strong {
+      color: #0f172a;
+      font-weight: 600;
+    }
+
+    .modul-document blockquote {
+      border-left: 4px solid #6366f1;
+      background-color: #f8fafc;
+      padding: 0.75rem 1rem;
+      margin: 0.75rem 0;
+      border-radius: 0.375rem;
+      font-style: italic;
+      color: #475569;
+    }
+
+    /* Styling Tabel Asesmen, Rubrik, & Langkah Pembelajaran */
+    .modul-document table {
+      width: 100%;
+      border-collapse: collapse;
+      margin: 1rem 0;
+      font-size: 0.88rem;
+      background-color: #ffffff;
+    }
+
+    .modul-document th {
+      background-color: #312e81;
+      color: #ffffff;
+      font-weight: 600;
+      text-align: left;
+      padding: 0.65rem 0.75rem;
+      border: 1px solid #cbd5e1;
+    }
+
+    .modul-document td {
+      padding: 0.6rem 0.75rem;
+      border: 1px solid #cbd5e1;
+      vertical-align: top;
+      line-height: 1.5;
+      color: #1e293b;
+    }
+
+    .modul-document tr:nth-child(even) td {
+      background-color: #f8fafc;
+    }
+
+    /* Animasi loading & transisi halus */
+    @keyframes pulse-subtle {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.55; }
+    }
+    .animate-pulse-subtle {
+      animation: pulse-subtle 1.8s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+    }
+
+    /* Aturan Cetak / Simpan PDF agar hanya mencetak dokumen Modul Ajar secara bersih */
+    @media print {
+      .no-print {
+        display: none !important;
+      }
+      body {
+        background-color: #ffffff !important;
+        margin: 0 !important;
+        padding: 0 !important;
+      }
+      #print-wrapper {
+        box-shadow: none !important;
+        border: none !important;
+        padding: 0 !important;
+        margin: 0 !important;
+        width: 100% !important;
+        max-width: 100% !important;
+      }
+      .modul-document h2 {
+        background-color: #eef2ff !important;
+        -webkit-print-color-adjust: exact;
+        print-color-adjust: exact;
+      }
+      .modul-document th {
+        background-color: #312e81 !important;
+        color: #ffffff !important;
+        -webkit-print-color-adjust: exact;
+        print-color-adjust: exact;
+      }
+      @page {
+        size: A4;
+        margin: 1.8cm;
+      }
+    }
+  </style>
+</head>
+<body class="min-h-screen flex flex-col">
+
+  <!-- ==================== HEADER / NAVBAR ==================== -->
+  <header class="no-print bg-gradient-to-r from-indigo-950 via-indigo-900 to-blue-900 text-white shadow-lg sticky top-0 z-30">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3.5 flex flex-wrap items-center justify-between gap-3">
+      <!-- Identitas Aplikasi -->
+      <div class="flex items-center gap-3">
+        <div class="bg-white/15 backdrop-blur-sm p-2.5 rounded-xl border border-white/20 shadow-inner">
+          <svg class="w-6 h-6 text-indigo-200" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M12 6.042A8.967 8.967 0 006 3.75c-1.052 0-2.062.18-3 .512v14.25A8.987 8.987 0 016 18c2.305 0 4.408.867 6 2.292m0-14.25a8.966 8.966 0 016-2.292c1.052 0 2.062.18 3 .512v14.25A8.987 8.987 0 0018 18a8.967 8.967 0 00-6 2.292m0-14.25v14.25" />
+          </svg>
+        </div>
+        <div>
+          <div class="flex items-center gap-2">
+            <h1 class="text-lg sm:text-xl font-bold tracking-tight">ModulAjar AI</h1>
+            <span class="text-xs font-semibold px-2.5 py-0.5 rounded-full bg-indigo-500/40 border border-indigo-300/30 text-indigo-100">
+              Pustaka SIBI
+            </span>
+          </div>
+          <p class="text-xs text-indigo-200 hidden sm:block">Generator Modul Ajar Kurikulum Merdeka Berbasis Referensi Buku Teks Resmi</p>
+        </div>
+      </div>
+
+      <!-- Status API Key & Tombol Pengaturan -->
+      <div class="flex items-center gap-2.5">
+        <button id="btn-api-status" onclick="openSettingsModal()" class="flex items-center gap-2 px-3 py-2 rounded-xl text-xs font-medium transition border">
+          <span id="api-status-dot" class="w-2.5 h-2.5 rounded-full bg-amber-400"></span>
+          <span id="api-status-text">API Key Belum Diatur</span>
+        </button>
+
+        <button onclick="openSettingsModal()" class="flex items-center gap-2 bg-white text-indigo-900 hover:bg-indigo-50 font-semibold text-xs sm:text-sm px-3.5 py-2 rounded-xl shadow-sm transition">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
+            <path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+          </svg>
+          <span>Pengaturan & Profil</span>
+        </button>
+      </div>
+    </div>
+
+    <!-- Navigasi Tab Utama -->
+    <div class="bg-indigo-950/60 border-t border-white/10">
+      <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex gap-1 sm:gap-2 overflow-x-auto">
+        <button id="tab-btn-generator" onclick="switchTab('generator')" class="tab-btn flex items-center gap-2 px-4 py-3 text-sm font-semibold border-b-2 border-white text-white whitespace-nowrap transition">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M9.813 15.904L9 18.75l-.813-2.846a4.5 4.5 0 00-3.09-3.09L2.25 12l2.846-.813a4.5 4.5 0 003.09-3.09L9 5.25l.813 2.846a4.5 4.5 0 003.09 3.09L15.75 12l-2.846.813a4.5 4.5 0 00-3.09 3.09z" />
+          </svg>
+          <span>Buat Modul Ajar</span>
+        </button>
+
+        <button id="tab-btn-library" onclick="switchTab('library')" class="tab-btn flex items-center gap-2 px-4 py-3 text-sm font-medium border-b-2 border-transparent text-indigo-200 hover:text-white whitespace-nowrap transition">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
+          </svg>
+          <span>Pustaka Buku SIBI</span>
+          <span id="library-count-badge" class="ml-1 px-2 py-0.5 text-xs font-bold rounded-full bg-indigo-500/40 text-white">0</span>
+        </button>
+
+        <button id="tab-btn-guide" onclick="switchTab('guide')" class="tab-btn flex items-center gap-2 px-4 py-3 text-sm font-medium border-b-2 border-transparent text-indigo-200 hover:text-white whitespace-nowrap transition">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+          </svg>
+          <span>Panduan Penggunaan</span>
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <!-- ==================== BANNER PERINGATAN API KEY (JIKA KOSONG) ==================== -->
+  <div id="api-warning-banner" class="no-print bg-amber-50 border-b border-amber-200 text-amber-900 px-4 py-2.5 hidden">
+    <div class="max-w-7xl mx-auto flex flex-wrap items-center justify-between gap-2 text-xs sm:text-sm">
+      <div class="flex items-center gap-2">
+        <svg class="w-5 h-5 text-amber-600 shrink-0" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+        </svg>
+        <span><strong>Gemini API Key belum dipasang.</strong> Silakan masukkan API Key gratis dari Google AI Studio agar AI dapat menyusun Modul Ajar Anda.</span>
+      </div>
+      <button onclick="openSettingsModal()" class="bg-amber-600 hover:bg-amber-700 text-white font-semibold px-3 py-1.5 rounded-lg text-xs transition">
+        Atur API Key Sekarang
+      </button>
+    </div>
+  </div>
+
+  <!-- ==================== KONTEN UTAMA ==================== -->
+  <main class="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-6">
+
+    <!-- ===================================================================== -->
+    <!-- TAB 1: BUAT MODUL AJAR (AI GENERATOR)                                 -->
+    <!-- ===================================================================== -->
+    <section id="tab-generator" class="tab-content grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+
+      <!-- KOLOM KIRI: FORM KONFIGURASI MODUL AJAR -->
+      <div class="no-print lg:col-span-5 space-y-5">
+
+        <!-- Kartu 1: Sumber Referensi Buku SIBI -->
+        <div class="bg-white rounded-2xl shadow-sm border border-slate-200 p-5">
+          <div class="flex items-center justify-between mb-3">
+            <h2 class="text-base font-bold text-indigo-950 flex items-center gap-2">
+              <span class="w-6 h-6 rounded-lg bg-indigo-100 text-indigo-700 flex items-center justify-center text-xs font-extrabold">1</span>
+              <span>Referensi Buku SIBI</span>
+            </h2>
+            <button onclick="switchTab('library')" class="text-xs font-semibold text-indigo-600 hover:text-indigo-800 underline">
+              + Unggah PDF Baru
+            </button>
+          </div>
+
+          <div class="space-y-3.5">
+            <div>
+              <label for="select-sibi-book" class="block text-xs font-semibold text-slate-700 mb-1">Pilih Buku dari Pustaka Lokal</label>
+              <select id="select-sibi-book" onchange="handleBookSelectionChange()" class="w-full rounded-xl border border-slate-300 bg-slate-50 px-3 py-2.5 text-sm text-slate-800 focus:border-indigo-600 focus:bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500/20">
+                <option value="">-- Tanpa Buku Referensi (Pengetahuan Umum AI) --</option>
+              </select>
+            </div>
+
+            <!-- Panel Rentang Halaman (Muncul jika buku dipilih) -->
+            <div id="page-range-panel" class="hidden bg-indigo-50/70 border border-indigo-100 rounded-xl p-3.5 space-y-3">
+              <div class="flex items-center justify-between text-xs">
+                <span class="font-semibold text-indigo-900">Tentukan Rentang Halaman Materi</span>
+                <span id="book-total-pages-label" class="text-indigo-700 font-medium">Total: 0 hal</span>
+              </div>
+
+              <div class="grid grid-cols-2 gap-3">
+                <div>
+                  <label for="input-page-start" class="block text-xs text-slate-600 mb-1">Dari Halaman</label>
+                  <input type="number" id="input-page-start" min="1" value="1" oninput="updateReferencePreview()" class="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm font-medium text-slate-800 focus:border-indigo-600 focus:outline-none" />
+                </div>
+                <div>
+                  <label for="input-page-end" class="block text-xs text-slate-600 mb-1">Sampai Halaman</label>
+                  <input type="number" id="input-page-end" min="1" value="5" oninput="updateReferencePreview()" class="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm font-medium text-slate-800 focus:border-indigo-600 focus:outline-none" />
+                </div>
+              </div>
+
+              <!-- Info Karakter Materi & Tombol Intip Teks -->
+              <div class="flex flex-wrap items-center justify-between gap-2 pt-1 border-t border-indigo-200/60 text-xs">
+                <span id="ref-char-count" class="text-indigo-900 font-medium">0 halaman (~0 karakter)</span>
+                <button type="button" onclick="openSelectedBookReader()" class="text-indigo-700 hover:text-indigo-950 font-semibold flex items-center gap-1">
+                  <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                  </svg>
+                  <span>Cek Nomor Halaman</span>
+                </button>
+              </div>
+              <p id="ref-range-warning" class="hidden text-xs text-rose-600 font-medium"></p>
+            </div>
+          </div>
+        </div>
+
+        <!-- Kartu 2: Identitas & Desain Pembelajaran -->
+        <div class="bg-white rounded-2xl shadow-sm border border-slate-200 p-5">
+          <h2 class="text-base font-bold text-indigo-950 flex items-center gap-2 mb-4">
+            <span class="w-6 h-6 rounded-lg bg-indigo-100 text-indigo-700 flex items-center justify-center text-xs font-extrabold">2</span>
+            <span>Identitas & Desain Kurikulum Merdeka</span>
+          </h2>
+
+          <form id="modul-form" onsubmit="event.preventDefault(); generateModulAjar();" class="space-y-4">
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <div>
+                <label for="input-guru" class="block text-xs font-semibold text-slate-700 mb-1">Nama Penyusun (Guru) *</label>
+                <input type="text" id="input-guru" required placeholder="Contoh: Budi Santoso, S.Pd." class="w-full rounded-xl border border-slate-300 px-3 py-2 text-sm focus:border-indigo-600 focus:outline-none focus:ring-2 focus:ring-indigo-500/20" />
+              </div>
+              <div>
+                <label for="input-sekolah" class="block text-xs font-semibold text-slate-700 mb-1">Satuan Pendidikan *</label>
+                <input type="text" id="input-sekolah" required placeholder="Contoh: SDN Nusantara 01" class="w-full rounded-xl border border-slate-300 px-3 py-2 text-sm focus:border-indigo-600 focus:outline-none focus:ring-2 focus:ring-indigo-500/20" />
+              </div>
+            </div>
+
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <div>
+                <label for="select-jenjang" class="block text-xs font-semibold text-slate-700 mb-1">Jenjang & Kelas / Fase *</label>
+                <select id="select-jenjang" required class="w-full rounded-xl border border-slate-300 bg-white px-3 py-2 text-sm focus:border-indigo-600 focus:outline-none focus:ring-2 focus:ring-indigo-500/20">
+                  <option value="SD Kelas 1 (Fase A)">SD Kelas 1 (Fase A)</option>
+                  <option value="SD Kelas 2 (Fase A)">SD Kelas 2 (Fase A)</option>
+                  <option value="SD Kelas 3 (Fase B)">SD Kelas 3 (Fase B)</option>
+                  <option value="SD Kelas 4 (Fase B)" selected>SD Kelas 4 (Fase B)</option>
+                  <option value="SD Kelas 5 (Fase C)">SD Kelas 5 (Fase C)</option>
+                  <option value="SD Kelas 6 (Fase C)">SD Kelas 6 (Fase C)</option>
+                  <option value="SMP Kelas 7 (Fase D)">SMP Kelas 7 (Fase D)</option>
+                  <option value="SMP Kelas 8 (Fase D)">SMP Kelas 8 (Fase D)</option>
+                  <option value="SMP Kelas 9 (Fase D)">SMP Kelas 9 (Fase D)</option>
+                  <option value="SMA/SMK Kelas 10 (Fase E)">SMA/SMK Kelas 10 (Fase E)</option>
+                  <option value="SMA/SMK Kelas 11 (Fase F)">SMA/SMK Kelas 11 (Fase F)</option>
+                  <option value="SMA/SMK Kelas 12 (Fase F)">SMA/SMK Kelas 12 (Fase F)</option>
+                </select>
+              </div>
+
+              <div>
+                <label for="select-mapel" class="block text-xs font-semibold text-slate-700 mb-1">Mata Pelajaran *</label>
+                <select id="select-mapel" onchange="toggleCustomMapel()" class="w-full rounded-xl border border-slate-300 bg-white px-3 py-2 text-sm focus:border-indigo-600 focus:outline-none focus:ring-2 focus:ring-indigo-500/20">
+                  <option value="IPAS (Ilmu Pengetahuan Alam dan Sosial)">IPAS</option>
+                  <option value="Matematika">Matematika</option>
+                  <option value="Bahasa Indonesia">Bahasa Indonesia</option>
+                  <option value="Pendidikan Pancasila">Pendidikan Pancasila</option>
+                  <option value="Seni dan Budaya">Seni & Budaya</option>
+                  <option value="Bahasa Inggris">Bahasa Inggris</option>
+                  <option value="PJOK">PJOK</option>
+                  <option value="Informatika">Informatika</option>
+                  <option value="Ilmu Pengetahuan Alam (IPA)">IPA (SMP/SMA)</option>
+                  <option value="Ilmu Pengetahuan Sosial (IPS)">IPS (SMP/SMA)</option>
+                  <option value="Sejarah">Sejarah</option>
+                  <option value="Lainnya">Lainnya (Ketik Manual)...</option>
+                </select>
+                <input type="text" id="input-mapel-custom" placeholder="Tulis nama mata pelajaran..." class="hidden mt-2 w-full rounded-xl border border-slate-300 px-3 py-2 text-sm focus:border-indigo-600 focus:outline-none" />
+              </div>
+            </div>
+
+            <div>
+              <label for="input-topik" class="block text-xs font-semibold text-slate-700 mb-1">Topik / Materi Pokok *</label>
+              <input type="text" id="input-topik" required placeholder="Contoh: Bab 1 Tumbuhan, Sumber Kehidupan di Bumi" class="w-full rounded-xl border border-slate-300 px-3 py-2 text-sm focus:border-indigo-600 focus:outline-none focus:ring-2 focus:ring-indigo-500/20" />
+            </div>
+
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <div>
+                <label for="input-alokasi" class="block text-xs font-semibold text-slate-700 mb-1">Alokasi Waktu *</label>
+                <input type="text" id="input-alokasi" required value="2 x 35 Menit (1 Pertemuan)" placeholder="Contoh: 2 x 35 Menit" class="w-full rounded-xl border border-slate-300 px-3 py-2 text-sm focus:border-indigo-600 focus:outline-none focus:ring-2 focus:ring-indigo-500/20" />
+              </div>
+              <div>
+                <label for="input-semester" class="block text-xs font-semibold text-slate-700 mb-1">Tahun Ajaran / Semester</label>
+                <input type="text" id="input-semester" value="2026/2027 - Semester Ganjil" class="w-full rounded-xl border border-slate-300 px-3 py-2 text-sm focus:border-indigo-600 focus:outline-none focus:ring-2 focus:ring-indigo-500/20" />
+              </div>
+            </div>
+
+            <!-- Model & Pendekatan Pembelajaran -->
+            <div>
+              <label class="block text-xs font-semibold text-slate-700 mb-2">Model & Pendekatan Pembelajaran</label>
+              <div class="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                <label class="flex items-center gap-2 p-2.5 rounded-xl border border-slate-200 hover:bg-indigo-50/50 cursor-pointer text-xs font-medium text-slate-700 transition">
+                  <input type="checkbox" name="model_pembelajaran" value="Problem-Based Learning (PBL)" checked class="rounded text-indigo-600 focus:ring-indigo-500 w-4 h-4" />
+                  <span>Problem-Based Learning (PBL)</span>
+                </label>
+
+                <label class="flex items-center gap-2 p-2.5 rounded-xl border border-slate-200 hover:bg-indigo-50/50 cursor-pointer text-xs font-medium text-slate-700 transition">
+                  <input type="checkbox" name="model_pembelajaran" value="Project-Based Learning (PjBL)" class="rounded text-indigo-600 focus:ring-indigo-500 w-4 h-4" />
+                  <span>Project-Based Learning (PjBL)</span>
+                </label>
+
+                <label class="flex items-center gap-2 p-2.5 rounded-xl border border-slate-200 hover:bg-indigo-50/50 cursor-pointer text-xs font-medium text-slate-700 transition">
+                  <input type="checkbox" name="model_pembelajaran" value="Discovery Learning" class="rounded text-indigo-600 focus:ring-indigo-500 w-4 h-4" />
+                  <span>Discovery Learning</span>
+                </label>
+
+                <label class="flex items-center gap-2 p-2.5 rounded-xl border border-slate-200 hover:bg-indigo-50/50 cursor-pointer text-xs font-medium text-slate-700 transition">
+                  <input type="checkbox" name="model_pembelajaran" value="Pendekatan Understanding by Design (UbD)" class="rounded text-indigo-600 focus:ring-indigo-500 w-4 h-4" />
+                  <span>Pendekatan UbD</span>
+                </label>
+
+                <label class="flex items-center gap-2 p-2.5 rounded-xl border border-slate-200 hover:bg-indigo-50/50 cursor-pointer text-xs font-medium text-slate-700 transition sm:col-span-2">
+                  <input type="checkbox" name="model_pembelajaran" value="Pembelajaran Berdiferensiasi (Konten, Proses, Produk)" checked class="rounded text-indigo-600 focus:ring-indigo-500 w-4 h-4" />
+                  <span>Pembelajaran Berdiferensiasi (Konten, Proses, Produk)</span>
+                </label>
+              </div>
+            </div>
+
+            <!-- Catatan Khusus Guru (Opsional) -->
+            <div>
+              <label for="input-catatan" class="block text-xs font-semibold text-slate-700 mb-1">Catatan / Fokus Tambahan (Opsional)</label>
+              <textarea id="input-catatan" rows="2" placeholder="Misal: Sertakan aktivitas pengamatan di halaman sekolah dan LKPD kelompok sederhana." class="w-full rounded-xl border border-slate-300 px-3 py-2 text-sm focus:border-indigo-600 focus:outline-none focus:ring-2 focus:ring-indigo-500/20"></textarea>
+            </div>
+
+            <!-- Tombol Submit Generate -->
+            <button type="submit" id="btn-generate" class="w-full bg-gradient-to-r from-indigo-700 to-blue-700 hover:from-indigo-800 hover:to-blue-800 text-white font-bold py-3.5 px-5 rounded-xl shadow-md hover:shadow-lg transition flex items-center justify-center gap-2.5 text-sm">
+              <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M9.813 15.904L9 18.75l-.813-2.846a4.5 4.5 0 00-3.09-3.09L2.25 12l2.846-.813a4.5 4.5 0 003.09-3.09L9 5.25l.813 2.846a4.5 4.5 0 003.09 3.09L15.75 12l-2.846.813a4.5 4.5 0 00-3.09 3.09z" />
+              </svg>
+              <span>Susun Modul Ajar dengan AI</span>
+            </button>
+          </form>
+        </div>
+      </div>
+
+      <!-- KOLOM KANAN: PRATINJAU HASIL MODUL AJAR & EKSPOR -->
+      <div class="lg:col-span-7 flex flex-col">
+        <!-- Toolbar Ekspor (Muncul di atas dokumen) -->
+        <div class="no-print bg-white rounded-t-2xl border border-slate-200 px-4 py-3 flex flex-wrap items-center justify-between gap-2 shadow-sm">
+          <div class="flex items-center gap-2">
+            <span class="w-2.5 h-2.5 rounded-full bg-indigo-600"></span>
+            <h3 class="text-sm font-bold text-slate-800">Hasil Dokumen Modul Ajar</h3>
+          </div>
+
+          <div class="flex flex-wrap items-center gap-2">
+            <button id="btn-export-word" onclick="exportToWord()" disabled class="disabled:opacity-40 disabled:cursor-not-allowed bg-blue-700 hover:bg-blue-800 text-white text-xs font-semibold px-3 py-2 rounded-xl flex items-center gap-1.5 transition shadow-sm">
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+              </svg>
+              <span>Unduh Word (.doc)</span>
+            </button>
+
+            <button id="btn-copy-text" onclick="copyModulText()" disabled class="disabled:opacity-40 disabled:cursor-not-allowed bg-slate-100 hover:bg-slate-200 text-slate-800 text-xs font-semibold px-3 py-2 rounded-xl flex items-center gap-1.5 transition border border-slate-300">
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
+              </svg>
+              <span>Salin Teks</span>
+            </button>
+
+            <button id="btn-print-pdf" onclick="window.print()" disabled class="disabled:opacity-40 disabled:cursor-not-allowed bg-indigo-50 hover:bg-indigo-100 text-indigo-800 text-xs font-semibold px-3 py-2 rounded-xl flex items-center gap-1.5 transition border border-indigo-200">
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z" />
+              </svg>
+              <span>Cetak / Simpan PDF</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- Kontainer Kertas Dokumen -->
+        <div id="print-wrapper" class="bg-white rounded-b-2xl border-x border-b border-slate-200 shadow-sm p-6 sm:p-8 min-h-[620px]">
+
+          <!-- State 1: Placeholder Kosong -->
+          <div id="modul-empty-state" class="h-full min-h-[520px] flex flex-col items-center justify-center text-center px-4">
+            <div class="w-16 h-16 rounded-2xl bg-indigo-50 text-indigo-600 flex items-center justify-center mb-4 border border-indigo-100">
+              <svg class="w-8 h-8" fill="none" stroke="currentColor" stroke-width="1.75" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+              </svg>
+            </div>
+            <h4 class="text-lg font-bold text-slate-800 mb-1.5">Siap Menyusun Modul Ajar Anda</h4>
+            <p class="text-sm text-slate-500 max-w-md leading-relaxed mb-5">
+              Pilih referensi buku SIBI dari pustaka lokal (opsional), lengkapi identitas mata pelajaran di sebelah kiri, lalu klik <strong>"Susun Modul Ajar dengan AI"</strong>.
+            </p>
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-2.5 text-left max-w-md w-full text-xs text-slate-600">
+              <div class="bg-slate-50 p-3 rounded-xl border border-slate-200/80">
+                <strong class="text-indigo-800 block mb-0.5">A. Informasi Umum</strong>
+                Identitas, Kompetensi Awal, Profil Pelajar Pancasila, Sarpras.
+              </div>
+              <div class="bg-slate-50 p-3 rounded-xl border border-slate-200/80">
+                <strong class="text-indigo-800 block mb-0.5">B. Komponen Inti</strong>
+                TP, Pemahaman Bermakna, Pertanyaan Pemantik, Sintaks Kegiatan.
+              </div>
+              <div class="bg-slate-50 p-3 rounded-xl border border-slate-200/80">
+                <strong class="text-indigo-800 block mb-0.5">C. Asesmen & Rubrik</strong>
+                Tabel Diagnostik, Formatif, Sumatif beserta skor penilaian.
+              </div>
+              <div class="bg-slate-50 p-3 rounded-xl border border-slate-200/80">
+                <strong class="text-indigo-800 block mb-0.5">D. Lampiran & LKPD</strong>
+                Pengayaan, Remedial, Ringkasan Materi SIBI & LKPD siap cetak.
+              </div>
+            </div>
+          </div>
+
+          <!-- State 2: Loading Skeleton saat AI Memproses -->
+          <div id="modul-loading-state" class="hidden min-h-[520px] flex flex-col items-center justify-center text-center px-4">
+            <div class="w-14 h-14 border-4 border-indigo-200 border-t-indigo-700 rounded-full animate-spin mb-4"></div>
+            <h4 class="text-base font-bold text-indigo-950 mb-1 animate-pulse-subtle">AI Sedang Menyusun Modul Ajar Kurikulum Merdeka...</h4>
+            <p id="loading-subtext" class="text-xs sm:text-sm text-slate-500 max-w-md">
+              Menganalisis materi referensi buku SIBI, merancang sintaks pembelajaran, dan menyusun tabel rubrik asesmen. Mohon tunggu 10–25 detik.
+            </p>
+          </div>
+
+          <!-- State 3: Hasil Dokumen Modul Ajar Ter-render -->
+          <div id="modul-result-container" class="hidden">
+            <!-- Kop Dokumen Resmi -->
+            <div class="border-b-2 border-indigo-900 pb-4 mb-6 text-center">
+              <p class="text-xs font-bold uppercase tracking-widest text-indigo-700">Perangkat Ajar Kurikulum Merdeka</p>
+              <h1 id="doc-header-title" class="text-xl sm:text-2xl font-extrabold text-slate-900 mt-1">MODUL AJAR</h1>
+              <p id="doc-header-subtitle" class="text-xs sm:text-sm text-slate-600 mt-1"></p>
+            </div>
+
+            <!-- Area Render Markdown -->
+            <div id="modul-render-area" class="modul-document overflow-x-auto"></div>
+          </div>
+
+        </div>
+      </div>
+    </section>
+
+    <!-- ===================================================================== -->
+    <!-- TAB 2: PUSTAKA BUKU SIBI (PENYIMPANAN LOKAL INDEXEDDB)                -->
+    <!-- ===================================================================== -->
+    <section id="tab-library" class="tab-content hidden space-y-6">
+
+      <!-- Header & Area Unggah PDF -->
+      <div class="bg-white rounded-2xl shadow-sm border border-slate-200 p-6">
+        <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-5">
+          <div>
+            <h2 class="text-lg font-bold text-indigo-950">Pustaka Buku Teks SIBI (Penyimpanan Lokal)</h2>
+            <p class="text-xs sm:text-sm text-slate-600 mt-0.5">
+              Unggah file PDF Buku Siswa / Buku Guru dari <a href="https://buku.kemdikbud.go.id" target="_blank" rel="noopener noreferrer" class="text-indigo-600 font-semibold underline hover:text-indigo-800">buku.kemdikbud.go.id</a>. Teks tiap halaman disimpan di IndexedDB browser Anda secara permanen dan offline.
+            </p>
+          </div>
+          <div class="flex items-center gap-2 text-xs bg-indigo-50 text-indigo-800 px-3.5 py-2 rounded-xl border border-indigo-100 shrink-0">
+            <svg class="w-4 h-4 text-indigo-600" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M4 7v10c0 2.21 3.582 4 8 4s8-1.79 8-4V7M4 7c0 2.21 3.582 4 8 4s8-1.79 8-4M4 7c0-2.21 3.582-4 8-4s8 1.79 8 4" />
+            </svg>
+            <span>Database: <strong>PustakaSIBI_DB</strong></span>
+          </div>
+        </div>
+
+        <!-- Dropzone Upload PDF -->
+        <label for="pdf-file-input" id="pdf-dropzone" class="flex flex-col items-center justify-center border-2 border-dashed border-indigo-300 hover:border-indigo-600 bg-indigo-50/40 hover:bg-indigo-50/80 rounded-2xl p-8 cursor-pointer transition text-center">
+          <div class="w-12 h-12 rounded-xl bg-indigo-100 text-indigo-700 flex items-center justify-center mb-3">
+            <svg class="w-6 h-6" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
+            </svg>
+          </div>
+          <p class="text-sm font-bold text-indigo-950">Klik untuk memilih file PDF Buku SIBI atau seret file ke sini</p>
+          <p class="text-xs text-slate-500 mt-1">Mendukung buku teks berhalaman ratusan (Buku Siswa / Buku Panduan Guru format .pdf)</p>
+          <input type="file" id="pdf-file-input" accept="application/pdf" class="hidden" onchange="handlePdfFileUpload(event)" />
+        </label>
+
+        <!-- Indikator Progres Ekstraksi PDF -->
+        <div id="pdf-progress-container" class="hidden mt-5 bg-slate-50 border border-slate-200 rounded-xl p-4">
+          <div class="flex items-center justify-between text-xs font-semibold text-indigo-950 mb-1.5">
+            <span id="pdf-progress-label">Membaca file PDF...</span>
+            <span id="pdf-progress-percent">0%</span>
+          </div>
+          <div class="w-full bg-slate-200 rounded-full h-2.5 overflow-hidden">
+            <div id="pdf-progress-bar" class="bg-indigo-600 h-2.5 rounded-full transition-all duration-150" style="width: 0%"></div>
+          </div>
+          <p id="pdf-progress-detail" class="text-xs text-slate-500 mt-1.5">Mengekstrak teks halaman demi halaman secara lokal di browser Anda...</p>
+        </div>
+      </div>
+
+      <!-- Daftar Buku Tersimpan -->
+      <div class="bg-white rounded-2xl shadow-sm border border-slate-200 p-6">
+        <div class="flex items-center justify-between mb-4">
+          <h3 class="text-base font-bold text-slate-800">Daftar Buku SIBI Tersimpan</h3>
+          <span id="library-summary-text" class="text-xs text-slate-500">Memuat pustaka...</span>
+        </div>
+
+        <!-- Grid Daftar Buku -->
+        <div id="books-list-grid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+          <!-- Item buku dirender melalui JavaScript -->
+        </div>
+
+        <!-- Empty State Pustaka -->
+        <div id="library-empty-state" class="hidden text-center py-12 px-4">
+          <div class="w-14 h-14 rounded-2xl bg-slate-100 text-slate-400 flex items-center justify-center mx-auto mb-3">
+            <svg class="w-7 h-7" fill="none" stroke="currentColor" stroke-width="1.75" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
+            </svg>
+          </div>
+          <h4 class="text-sm font-bold text-slate-700">Belum Ada Buku SIBI di Pustaka Lokal</h4>
+          <p class="text-xs text-slate-500 max-w-md mx-auto mt-1">
+            Unggah file PDF Buku Siswa atau Buku Guru yang sudah Anda unduh agar AI dapat menyusun modul ajar yang akurat sesuai materi buku.
+          </p>
+        </div>
+      </div>
+    </section>
+
+    <!-- ===================================================================== -->
+    <!-- TAB 3: PANDUAN PENGGUNAAN & HOSTING GITHUB PAGES                      -->
+    <!-- ===================================================================== -->
+    <section id="tab-guide" class="tab-content hidden">
+      <div class="bg-white rounded-2xl shadow-sm border border-slate-200 p-6 sm:p-8 max-w-4xl mx-auto space-y-6">
+        <div class="border-b border-slate-200 pb-4">
+          <h2 class="text-xl font-bold text-indigo-950">Panduan Penggunaan ModulAjar AI - Pustaka SIBI</h2>
+          <p class="text-sm text-slate-600 mt-1">Aplikasi ini dirancang 100% berjalan di browser (Client-Side) sehingga aman di-hosting gratis di GitHub Pages.</p>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
+          <div class="bg-indigo-50/60 border border-indigo-100 rounded-2xl p-5">
+            <span class="inline-block px-2.5 py-1 bg-indigo-700 text-white text-xs font-bold rounded-lg mb-2.5">Langkah 1</span>
+            <h3 class="font-bold text-indigo-950 text-base mb-1.5">Dapatkan Gemini API Key Gratis</h3>
+            <ol class="text-xs sm:text-sm text-slate-700 space-y-1.5 list-decimal pl-4">
+              <li>Buka <a href="https://aistudio.google.com/apikey" target="_blank" rel="noopener noreferrer" class="text-indigo-700 font-semibold underline">Google AI Studio (aistudio.google.com)</a> dan login dengan akun Google Anda.</li>
+              <li>Klik tombol <strong>"Create API Key"</strong> lalu salin kode kuncinya.</li>
+              <li>Klik tombol <strong>"Pengaturan & Profil"</strong> di pojok kanan atas aplikasi ini, tempel API Key tersebut, dan simpan.</li>
+              <li>Kunci hanya disimpan di <code>localStorage</code> browser Anda sendiri, tidak pernah dikirim ke server lain.</li>
+            </ol>
+          </div>
+
+          <div class="bg-blue-50/60 border border-blue-100 rounded-2xl p-5">
+            <span class="inline-block px-2.5 py-1 bg-blue-700 text-white text-xs font-bold rounded-lg mb-2.5">Langkah 2</span>
+            <h3 class="font-bold text-blue-950 text-base mb-1.5">Unduh & Simpan Buku PDF SIBI</h3>
+            <ol class="text-xs sm:text-sm text-slate-700 space-y-1.5 list-decimal pl-4">
+              <li>Unduh buku teks resmi Kurikulum Merdeka (PDF) dari portal <strong>SIBI Kemendikbudristek</strong> (<code>buku.kemdikbud.go.id</code>).</li>
+              <li>Buka tab <strong>"Pustaka Buku SIBI"</strong> di aplikasi ini lalu unggah file PDF tersebut.</li>
+              <li>Sistem akan mengekstrak seluruh teks halaman dan menyimpannya ke database lokal browser (<strong>IndexedDB</strong>).</li>
+              <li>Gunakan tombol <strong>"Lihat Isi Halaman"</strong> untuk mengecek nomor halaman bab yang ingin diajarkan.</li>
+            </ol>
+          </div>
+
+          <div class="bg-emerald-50/60 border border-emerald-100 rounded-2xl p-5">
+            <span class="inline-block px-2.5 py-1 bg-emerald-700 text-white text-xs font-bold rounded-lg mb-2.5">Langkah 3</span>
+            <h3 class="font-bold text-emerald-950 text-base mb-1.5">Susun & Ekspor Modul Ajar</h3>
+            <ol class="text-xs sm:text-sm text-slate-700 space-y-1.5 list-decimal pl-4">
+              <li>Kembali ke tab <strong>"Buat Modul Ajar"</strong>, pilih buku dari dropdown, dan tentukan rentang halaman materi (misal hal. 1 s.d. 12).</li>
+              <li>Lengkapi kelas, mata pelajaran, topik, alokasi waktu, dan pilih sintaks model pembelajaran (PBL, PjBL, UbD, dll.).</li>
+              <li>Klik <strong>"Susun Modul Ajar dengan AI"</strong>.</li>
+              <li>Unduh hasilnya langsung sebagai file <strong>Microsoft Word (.doc)</strong> berformat A4 atau cetak ke PDF.</li>
+            </ol>
+          </div>
+
+          <div class="bg-slate-50 border border-slate-200 rounded-2xl p-5">
+            <span class="inline-block px-2.5 py-1 bg-slate-700 text-white text-xs font-bold rounded-lg mb-2.5">Tips GitHub Pages</span>
+            <h3 class="font-bold text-slate-900 text-base mb-1.5">Cara Unggah ke GitHub Pages</h3>
+            <ol class="text-xs sm:text-sm text-slate-700 space-y-1.5 list-decimal pl-4">
+              <li>Buat repositori baru di GitHub (misal: <code>modulajar-ai</code>).</li>
+              <li>Unggah file tunggal <code>index.html</code> ini ke repositori tersebut.</li>
+              <li>Masuk ke menu <strong>Settings &rarr; Pages</strong>, pilih branch <code>main</code> dan folder <code>/ (root)</code>, lalu klik Save.</li>
+              <li>Dalam 1 menit, aplikasi web Anda aktif secara online dan siap dipakai oleh rekan-rekan guru!</li>
+            </ol>
+          </div>
+        </div>
+      </div>
+    </section>
+
+  </main>
+
+  <!-- ==================== FOOTER ==================== -->
+  <footer class="no-print bg-white border-t border-slate-200 py-4 mt-10">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col sm:flex-row items-center justify-between gap-2 text-xs text-slate-500">
+      <p><strong>ModulAjar AI - Pustaka SIBI</strong> &bull; Perangkat Bantu Penyusunan Modul Ajar Kurikulum Merdeka</p>
+      <p>Penyimpanan Lokal Browser (IndexedDB & LocalStorage) &bull; Ditenagai Google Gemini 2.5 Flash</p>
+    </div>
+  </footer>
+
+  <!-- ===================================================================== -->
+  <!-- MODAL 1: PENGATURAN API KEY & PROFIL GURU                             -->
+  <!-- ===================================================================== -->
+  <div id="settings-modal" class="no-print fixed inset-0 z-50 hidden bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4">
+    <div class="bg-white rounded-2xl shadow-2xl border border-slate-200 max-w-lg w-full max-h-[90vh] overflow-y-auto">
+      <div class="flex items-center justify-between px-6 py-4 border-b border-slate-200 bg-indigo-950 text-white rounded-t-2xl">
+        <h3 class="font-bold text-base">Pengaturan API Key & Profil Default Guru</h3>
+        <button onclick="closeSettingsModal()" class="text-indigo-200 hover:text-white p-1 rounded-lg">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
+          </svg>
+        </button>
+      </div>
+
+      <form onsubmit="event.preventDefault(); saveSettings();" class="p-6 space-y-5">
+        <!-- Bagian API Key -->
+        <div class="space-y-2">
+          <label for="modal-api-key" class="block text-xs font-bold uppercase tracking-wider text-indigo-900">
+            Google Gemini API Key *
+          </label>
+          <div class="relative">
+            <input type="password" id="modal-api-key" placeholder="AIzaSy..." class="w-full rounded-xl border border-slate-300 pr-11 pl-3.5 py-2.5 text-sm font-mono focus:border-indigo-600 focus:outline-none focus:ring-2 focus:ring-indigo-500/20" />
+            <button type="button" onclick="toggleApiKeyVisibility()" class="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-700" title="Tampilkan / Sembunyikan API Key">
+              <svg id="eye-icon" class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                <path stroke-linecap="round" stroke-linejoin="round" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+              </svg>
+            </button>
+          </div>
+          <p class="text-xs text-slate-500">
+            Disimpan aman secara lokal di <code>localStorage</code> browser Anda (tidak pernah diunggah ke GitHub).
+          </p>
+
+          <!-- Panduan Singkat API Key -->
+          <div class="bg-indigo-50 border border-indigo-100 rounded-xl p-3 text-xs text-indigo-950 space-y-1">
+            <p class="font-bold">Cara Mendapatkan Gemini API Key Gratis:</p>
+            <ol class="list-decimal pl-4 space-y-0.5 text-indigo-900">
+              <li>Kunjungi <a href="https://aistudio.google.com/apikey" target="_blank" rel="noopener noreferrer" class="underline font-semibold text-indigo-700">Google AI Studio (aistudio.google.com/apikey)</a>.</li>
+              <li>Login menggunakan akun Google/Gmail Anda.</li>
+              <li>Klik <strong>Create API Key</strong>, pilih project baru, lalu salin kuncinya ke kolom di atas.</li>
+            </ol>
+          </div>
+        </div>
+
+        <hr class="border-slate-200" />
+
+        <!-- Bagian Profil Default Guru -->
+        <div class="space-y-3">
+          <p class="text-xs font-bold uppercase tracking-wider text-indigo-900">Profil Default Guru (Otomatis Mengisi Form)</p>
+
+          <div>
+            <label for="modal-prof-guru" class="block text-xs font-semibold text-slate-700 mb-1">Nama Lengkap & Gelar Guru</label>
+            <input type="text" id="modal-prof-guru" placeholder="Contoh: Siti Aminah, S.Pd., Gr." class="w-full rounded-xl border border-slate-300 px-3.5 py-2 text-sm focus:border-indigo-600 focus:outline-none" />
+          </div>
+
+          <div>
+            <label for="modal-prof-sekolah" class="block text-xs font-semibold text-slate-700 mb-1">Nama Satuan Pendidikan / Sekolah</label>
+            <input type="text" id="modal-prof-sekolah" placeholder="Contoh: SD Negeri 01 Merdeka" class="w-full rounded-xl border border-slate-300 px-3.5 py-2 text-sm focus:border-indigo-600 focus:outline-none" />
+          </div>
+
+          <div>
+            <label for="modal-prof-jenjang" class="block text-xs font-semibold text-slate-700 mb-1">Jenjang & Kelas / Fase Default</label>
+            <select id="modal-prof-jenjang" class="w-full rounded-xl border border-slate-300 bg-white px-3.5 py-2 text-sm focus:border-indigo-600 focus:outline-none">
+              <option value="SD Kelas 1 (Fase A)">SD Kelas 1 (Fase A)</option>
+              <option value="SD Kelas 2 (Fase A)">SD Kelas 2 (Fase A)</option>
+              <option value="SD Kelas 3 (Fase B)">SD Kelas 3 (Fase B)</option>
+              <option value="SD Kelas 4 (Fase B)">SD Kelas 4 (Fase B)</option>
+              <option value="SD Kelas 5 (Fase C)">SD Kelas 5 (Fase C)</option>
+              <option value="SD Kelas 6 (Fase C)">SD Kelas 6 (Fase C)</option>
+              <option value="SMP Kelas 7 (Fase D)">SMP Kelas 7 (Fase D)</option>
+              <option value="SMP Kelas 8 (Fase D)">SMP Kelas 8 (Fase D)</option>
+              <option value="SMP Kelas 9 (Fase D)">SMP Kelas 9 (Fase D)</option>
+              <option value="SMA/SMK Kelas 10 (Fase E)">SMA/SMK Kelas 10 (Fase E)</option>
+              <option value="SMA/SMK Kelas 11 (Fase F)">SMA/SMK Kelas 11 (Fase F)</option>
+              <option value="SMA/SMK Kelas 12 (Fase F)">SMA/SMK Kelas 12 (Fase F)</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="flex items-center justify-end gap-2.5 pt-2">
+          <button type="button" onclick="closeSettingsModal()" class="px-4 py-2.5 rounded-xl text-xs font-semibold text-slate-600 hover:bg-slate-100 transition">
+            Batal
+          </button>
+          <button type="submit" class="px-5 py-2.5 rounded-xl text-xs font-bold bg-indigo-700 hover:bg-indigo-800 text-white shadow-sm transition">
+            Simpan Pengaturan
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- ===================================================================== -->
+  <!-- MODAL 2: LIHAT ISI HALAMAN BUKU SIBI (READER / PREVIEW)               -->
+  <!-- ===================================================================== -->
+  <div id="reader-modal" class="no-print fixed inset-0 z-50 hidden bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4">
+    <div class="bg-white rounded-2xl shadow-2xl border border-slate-200 max-w-3xl w-full max-h-[90vh] flex flex-col">
+      <!-- Header Modal Reader -->
+      <div class="flex items-center justify-between px-6 py-4 border-b border-slate-200 bg-indigo-950 text-white rounded-t-2xl">
+        <div class="pr-4">
+          <h3 id="reader-book-title" class="font-bold text-sm sm:text-base line-clamp-1">Judul Buku SIBI</h3>
+          <p id="reader-book-meta" class="text-xs text-indigo-200 mt-0.5">Total 0 Halaman</p>
+        </div>
+        <button onclick="closeReaderModal()" class="text-indigo-200 hover:text-white p-1.5 rounded-lg shrink-0">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
+          </svg>
+        </button>
+      </div>
+
+      <!-- Kontrol Navigasi Halaman & Pencarian -->
+      <div class="px-6 py-3 bg-slate-50 border-b border-slate-200 flex flex-wrap items-center justify-between gap-3">
+        <div class="flex items-center gap-2">
+          <button onclick="changeReaderPage(-1)" class="px-3 py-1.5 rounded-lg bg-white border border-slate-300 hover:bg-slate-100 text-xs font-semibold text-slate-700">
+            &larr; Sebelumnya
+          </button>
+          <div class="flex items-center gap-1.5 text-xs">
+            <span>Hal.</span>
+            <input type="number" id="reader-page-input" min="1" value="1" onchange="jumpToReaderPage(this.value)" class="w-16 rounded-lg border border-slate-300 px-2 py-1 text-center font-bold text-indigo-900" />
+            <span id="reader-max-page">/ 1</span>
+          </div>
+          <button onclick="changeReaderPage(1)" class="px-3 py-1.5 rounded-lg bg-white border border-slate-300 hover:bg-slate-100 text-xs font-semibold text-slate-700">
+            Berikutnya &rarr;
+          </button>
+        </div>
+
+        <button onclick="useCurrentBookInGenerator()" class="bg-indigo-700 hover:bg-indigo-800 text-white text-xs font-semibold px-3.5 py-1.5 rounded-lg transition">
+          Gunakan Buku Ini di Modul Ajar
+        </button>
+      </div>
+
+      <!-- Konten Teks Halaman -->
+      <div class="p-6 overflow-y-auto flex-1 bg-white">
+        <div class="flex items-center justify-between text-xs text-slate-400 mb-2">
+          <span id="reader-page-indicator" class="font-semibold text-indigo-700">Halaman 1</span>
+          <span id="reader-page-chars">0 karakter</span>
+        </div>
+        <div id="reader-page-text" class="bg-slate-50 border border-slate-200 rounded-xl p-4 text-sm text-slate-800 leading-relaxed whitespace-pre-wrap font-sans min-h-[260px]">
+          Memuat teks halaman...
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===================================================================== -->
+  <!-- MODAL 3: KONFIRMASI HAPUS BUKU (PENGGANTI window.confirm)             -->
+  <!-- ===================================================================== -->
+  <div id="confirm-modal" class="no-print fixed inset-0 z-50 hidden bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4">
+    <div class="bg-white rounded-2xl shadow-xl border border-slate-200 max-w-sm w-full p-6 text-center">
+      <div class="w-12 h-12 rounded-full bg-rose-100 text-rose-600 flex items-center justify-center mx-auto mb-3">
+        <svg class="w-6 h-6" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+        </svg>
+      </div>
+      <h4 class="text-base font-bold text-slate-900 mb-1">Hapus Buku dari Pustaka?</h4>
+      <p id="confirm-book-name" class="text-xs text-slate-600 mb-5">Buku akan dihapus permanen dari penyimpanan browser.</p>
+      <div class="flex items-center justify-center gap-2.5">
+        <button onclick="closeConfirmModal()" class="flex-1 py-2.5 px-4 rounded-xl border border-slate-300 text-xs font-semibold text-slate-700 hover:bg-slate-50">
+          Batal
+        </button>
+        <button id="btn-confirm-delete" class="flex-1 py-2.5 px-4 rounded-xl bg-rose-600 hover:bg-rose-700 text-xs font-bold text-white">
+          Ya, Hapus
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ==================== TOAST NOTIFICATION CONTAINER ==================== -->
+  <div id="toast-container" class="no-print fixed bottom-5 right-5 z-50 flex flex-col gap-2 max-w-sm w-full pointer-events-none px-4 sm:px-0"></div>
+
+  <!-- ===================================================================== -->
+  <!-- JAVASCRIPT UTAMA APLIKASI                                             -->
+  <!-- ===================================================================== -->
+  <script>
+    // Konfigurasi Worker PDF.js agar berjalan lancar dari CDN tanpa backend
+    if (typeof pdfjsLib !== 'undefined') {
+      pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+    }
+
+    // Konfigurasi Marked.js untuk parsing tabel & baris baru dengan rapi
+    if (typeof marked !== 'undefined') {
+      marked.setOptions({
+        breaks: true,
+        gfm: true
+      });
+    }
+
+    // ==================== STATE GLOBAL APLIKASI ====================
+    const STORAGE_KEYS = {
+      API_KEY: 'modulajar_sibi_api_key',
+      PROFILE: 'modulajar_sibi_teacher_profile'
+    };
+
+    const DB_NAME = 'PustakaSIBI_DB';
+    const DB_VERSION = 1;
+    const STORE_NAME = 'books';
+
+    let savedBooksCache = [];      // Cache daftar buku dari IndexedDB
+    let currentGeneratedMarkdown = ''; // Menyimpan hasil Markdown mentah terakhir
+    let currentModulMeta = null;   // Metadata modul terakhir untuk nama file Word
+    let activeReaderBook = null;   // Buku yang sedang dibuka di modal reader
+    let activeReaderPage = 1;      // Nomor halaman aktif di modal reader
+    let pendingDeleteBookId = null;
+
+    // ==================== INISIALISASI SAAT HALAMAN DIMUAT ====================
+    window.addEventListener('DOMContentLoaded', async () => {
+      loadSettingsAndProfile();
+      await refreshBooksLibrary();
+      setupDragAndDrop();
+    });
+
+    // ==================== SISTEM NOTIFIKASI TOAST ====================
+    function showToast(message, type = 'info') {
+      const container = document.getElementById('toast-container');
+      const toast = document.createElement('div');
+
+      const styles = {
+        success: 'bg-emerald-900 text-white border-emerald-700',
+        error: 'bg-rose-900 text-white border-rose-700',
+        warning: 'bg-amber-900 text-white border-amber-700',
+        info: 'bg-indigo-950 text-white border-indigo-800'
+      };
+
+      toast.className = `pointer-events-auto flex items-center justify-between gap-3 px-4 py-3 rounded-xl shadow-lg border text-xs sm:text-sm font-medium transition-all duration-300 transform translate-y-2 opacity-0 ${styles[type] || styles.info}`;
+      toast.innerHTML = `
+        <span>${escapeHtml(message)}</span>
+        <button onclick="this.parentElement.remove()" class="text-white/70 hover:text-white font-bold ml-2">&times;</button>
+      `;
+
+      container.appendChild(toast);
+
+      // Animasi masuk
+      requestAnimationFrame(() => {
+        toast.classList.remove('translate-y-2', 'opacity-0');
+      });
+
+      // Hapus otomatis setelah 4.5 detik
+      setTimeout(() => {
+        toast.classList.add('opacity-0', 'translate-y-2');
+        setTimeout(() => toast.remove(), 300);
+      }, 4500);
+    }
+
+    function escapeHtml(str) {
+      if (!str) return '';
+      return String(str)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#039;');
+    }
+
+    // ==================== NAVIGASI TAB ====================
+    function switchTab(tabName) {
+      // Sembunyikan semua tab content
+      document.querySelectorAll('.tab-content').forEach(el => el.classList.add('hidden'));
+      document.getElementById(`tab-${tabName}`).classList.remove('hidden');
+
+      // Reset gaya tombol tab
+      document.querySelectorAll('.tab-btn').forEach(btn => {
+        btn.classList.remove('border-white', 'text-white', 'font-semibold');
+        btn.classList.add('border-transparent', 'text-indigo-200', 'font-medium');
+      });
+
+      // Aktifkan tombol tab terpilih
+      const activeBtn = document.getElementById(`tab-btn-${tabName}`);
+      if (activeBtn) {
+        activeBtn.classList.remove('border-transparent', 'text-indigo-200', 'font-medium');
+        activeBtn.classList.add('border-white', 'text-white', 'font-semibold');
+      }
+    }
+
+    // ==================== PENGATURAN API KEY & PROFIL GURU ====================
+    function loadSettingsAndProfile() {
+      const apiKey = localStorage.getItem(STORAGE_KEYS.API_KEY) || '';
+      const profileRaw = localStorage.getItem(STORAGE_KEYS.PROFILE);
+
+      // Perbarui status API Key di Navbar
+      const statusBtn = document.getElementById('btn-api-status');
+      const statusDot = document.getElementById('api-status-dot');
+      const statusText = document.getElementById('api-status-text');
+      const warningBanner = document.getElementById('api-warning-banner');
+
+      if (apiKey.trim().length > 10) {
+        statusBtn.className = 'flex items-center gap-2 px-3 py-2 rounded-xl text-xs font-medium transition border bg-emerald-500/20 border-emerald-400/40 text-emerald-100 hover:bg-emerald-500/30';
+        statusDot.className = 'w-2.5 h-2.5 rounded-full bg-emerald-400';
+        statusText.textContent = 'API Key Aktif';
+        warningBanner.classList.add('hidden');
+      } else {
+        statusBtn.className = 'flex items-center gap-2 px-3 py-2 rounded-xl text-xs font-medium transition border bg-amber-500/20 border-amber-400/40 text-amber-100 hover:bg-amber-500/30';
+        statusDot.className = 'w-2.5 h-2.5 rounded-full bg-amber-400 animate-ping';
+        statusText.textContent = 'API Key Belum Diatur';
+        warningBanner.classList.remove('hidden');
+      }
+
+      // Isi form pengaturan & form utama dari profil tersimpan
+      document.getElementById('modal-api-key').value = apiKey;
+
+      if (profileRaw) {
+        try {
+          const profile = JSON.parse(profileRaw);
+          if (profile.guru) {
+            document.getElementById('modal-prof-guru').value = profile.guru;
+            document.getElementById('input-guru').value = profile.guru;
+          }
+          if (profile.sekolah) {
+            document.getElementById('modal-prof-sekolah').value = profile.sekolah;
+            document.getElementById('input-sekolah').value = profile.sekolah;
+          }
+          if (profile.jenjang) {
+            document.getElementById('modal-prof-jenjang').value = profile.jenjang;
+            document.getElementById('select-jenjang').value = profile.jenjang;
+          }
+        } catch (e) {
+          console.error('Gagal membaca profil tersimpan:', e);
+        }
+      }
+    }
+
+    function openSettingsModal() {
+      document.getElementById('settings-modal').classList.remove('hidden');
+    }
+
+    function closeSettingsModal() {
+      document.getElementById('settings-modal').classList.add('hidden');
+    }
+
+    function toggleApiKeyVisibility() {
+      const input = document.getElementById('modal-api-key');
+      input.type = input.type === 'password' ? 'text' : 'password';
+    }
+
+    function saveSettings() {
+      const apiKey = document.getElementById('modal-api-key').value.trim();
+      const profile = {
+        guru: document.getElementById('modal-prof-guru').value.trim(),
+        sekolah: document.getElementById('modal-prof-sekolah').value.trim(),
+        jenjang: document.getElementById('modal-prof-jenjang').value
+      };
+
+      localStorage.setItem(STORAGE_KEYS.API_KEY, apiKey);
+      localStorage.setItem(STORAGE_KEYS.PROFILE, JSON.stringify(profile));
+
+      loadSettingsAndProfile();
+      closeSettingsModal();
+      showToast('API Key dan Profil Guru berhasil disimpan di browser!', 'success');
+    }
+
+    // ==================== INDEXEDDB: PUSTAKA BUKU SIBI ====================
+    function openSibiDatabase() {
+      return new Promise((resolve, reject) => {
+        const request = indexedDB.open(DB_NAME, DB_VERSION);
+
+        request.onupgradeneeded = (event) => {
+          const db = event.target.result;
+          if (!db.objectStoreNames.contains(STORE_NAME)) {
+            db.createObjectStore(STORE_NAME, { keyPath: 'id' });
+          }
+        };
+
+        request.onsuccess = () => resolve(request.result);
+        request.onerror = () => reject(request.error);
+      });
+    }
+
+    async function saveBookToIndexedDB(bookRecord) {
+      const db = await openSibiDatabase();
+      return new Promise((resolve, reject) => {
+        const tx = db.transaction(STORE_NAME, 'readwrite');
+        const store = tx.objectStore(STORE_NAME);
+        const req = store.put(bookRecord);
+        req.onsuccess = () => resolve(true);
+        req.onerror = () => reject(req.error);
+      });
+    }
+
+    async function getAllBooksFromIndexedDB() {
+      const db = await openSibiDatabase();
+      return new Promise((resolve, reject) => {
+        const tx = db.transaction(STORE_NAME, 'readonly');
+        const store = tx.objectStore(STORE_NAME);
+        const req = store.getAll();
+        req.onsuccess = () => resolve(req.result || []);
+        req.onerror = () => reject(req.error);
+      });
+    }
+
+    async function deleteBookFromIndexedDB(bookId) {
+      const db = await openSibiDatabase();
+      return new Promise((resolve, reject) => {
+        const tx = db.transaction(STORE_NAME, 'readwrite');
+        const store = tx.objectStore(STORE_NAME);
+        const req = store.delete(bookId);
+        req.onsuccess = () => resolve(true);
+        req.onerror = () => reject(req.error);
+      });
+    }
+
+    // ==================== EKSTRAKSI PDF DENGAN PDF.JS ====================
+    function setupDragAndDrop() {
+      const dropzone = document.getElementById('pdf-dropzone');
+      if (!dropzone) return;
+
+      ['dragenter', 'dragover'].forEach(evtName => {
+        dropzone.addEventListener(evtName, (e) => {
+          e.preventDefault();
+          dropzone.classList.add('border-indigo-600', 'bg-indigo-100/60');
+        });
+      });
+
+      ['dragleave', 'drop'].forEach(evtName => {
+        dropzone.addEventListener(evtName, (e) => {
+          e.preventDefault();
+          dropzone.classList.remove('border-indigo-600', 'bg-indigo-100/60');
+        });
+      });
+
+      dropzone.addEventListener('drop', (e) => {
+        const files = e.dataTransfer.files;
+        if (files && files.length > 0) {
+          processPdfFile(files[0]);
+        }
+      });
+    }
+
+    function handlePdfFileUpload(event) {
+      const file = event.target.files[0];
+      if (file) {
+        processPdfFile(file);
+      }
+      // Reset input agar file yang sama bisa dipilih ulang jika diperlukan
+      event.target.value = '';
+    }
+
+    async function processPdfFile(file) {
+      if (file.type !== 'application/pdf' && !file.name.toLowerCase().endsWith('.pdf')) {
+        showToast('Harap pilih file dengan format PDF (.pdf).', 'error');
+        return;
+      }
+
+      if (typeof pdfjsLib === 'undefined') {
+        showToast('Library PDF.js gagal dimuat. Periksa koneksi internet Anda.', 'error');
+        return;
+      }
+
+      const progressContainer = document.getElementById('pdf-progress-container');
+      const progressLabel = document.getElementById('pdf-progress-label');
+      const progressPercent = document.getElementById('pdf-progress-percent');
+      const progressBar = document.getElementById('pdf-progress-bar');
+      const progressDetail = document.getElementById('pdf-progress-detail');
+
+      progressContainer.classList.remove('hidden');
+      progressLabel.textContent = `Memuat "${file.name}"...`;
+      progressPercent.textContent = '0%';
+      progressBar.style.width = '0%';
+
+      try {
+        const arrayBuffer = await file.arrayBuffer();
+        const loadingTask = pdfjsLib.getDocument({ data: arrayBuffer });
+        const pdfDoc = await loadingTask.promise;
+        const totalPages = pdfDoc.numPages;
+
+        const pagesData = [];
+        let totalChars = 0;
+
+        for (let pageNum = 1; pageNum <= totalPages; pageNum++) {
+          const page = await pdfDoc.getPage(pageNum);
+          const textContent = await page.getTextContent();
+
+          // Gabungkan item teks dengan spasi yang rapi
+          const rawStrings = textContent.items.map(item => item.str);
+          const cleanPageText = rawStrings
+            .join(' ')
+            .replace(/\s+/g, ' ')
+            .trim();
+
+          pagesData.push({
+            pageNum: pageNum,
+            text: cleanPageText
+          });
+
+          totalChars += cleanPageText.length;
+
+          // Update progres visual
+          const pct = Math.round((pageNum / totalPages) * 100);
+          progressLabel.textContent = `Mengekstrak: ${file.name}`;
+          progressPercent.textContent = `${pct}%`;
+          progressBar.style.width = `${pct}%`;
+          progressDetail.textContent = `Memproses halaman ${pageNum} dari ${totalPages} (${totalChars.toLocaleString('id-ID')} karakter)...`;
+        }
+
+        // Bersihkan judul buku dari ekstensi .pdf
+        const cleanTitle = file.name.replace(/\.pdf$/i, '').replace(/[_-]+/g, ' ');
+
+        const bookRecord = {
+          id: 'sibi_' + Date.now(),
+          title: cleanTitle,
+          fileName: file.name,
+          totalPages: totalPages,
+          fileSize: formatFileSize(file.size),
+          totalChars: totalChars,
+          uploadedAt: new Date().toLocaleDateString('id-ID', {
+            day: 'numeric',
+            month: 'short',
+            year: 'numeric'
+          }),
+          pages: pagesData
+        };
+
+        await saveBookToIndexedDB(bookRecord);
+        await refreshBooksLibrary();
+
+        showToast(`Buku "${cleanTitle}" (${totalPages} halaman) berhasil disimpan ke Pustaka SIBI!`, 'success');
+      } catch (err) {
+        console.error('Kesalahan saat membaca PDF:', err);
+        showToast('Gagal membaca file PDF. Pastikan file tidak terenkripsi password.', 'error');
+      } finally {
+        setTimeout(() => {
+          progressContainer.classList.add('hidden');
+        }, 1200);
+      }
+    }
+
+    function formatFileSize(bytes) {
+      if (bytes === 0) return '0 B';
+      const k = 1024;
+      const sizes = ['B', 'KB', 'MB', 'GB'];
+      const i = Math.floor(Math.log(bytes) / Math.log(k));
+      return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+    }
+
+    // ==================== RENDER DAFTAR PUSTAKA & DROPDOWN ====================
+    async function refreshBooksLibrary() {
+      try {
+        savedBooksCache = await getAllBooksFromIndexedDB();
+        // Urutkan terbaru di atas
+        savedBooksCache.sort((a, b) => (b.id > a.id ? 1 : -1));
+
+        // Update badge jumlah buku
+        document.getElementById('library-count-badge').textContent = savedBooksCache.length;
+        document.getElementById('library-summary-text').textContent = `${savedBooksCache.length} buku tersimpan secara lokal`;
+
+        renderBooksGrid();
+        populateBookDropdown();
+      } catch (err) {
+        console.error('Gagal memuat daftar buku IndexedDB:', err);
+      }
+    }
+
+    function renderBooksGrid() {
+      const grid = document.getElementById('books-list-grid');
+      const emptyState = document.getElementById('library-empty-state');
+
+      grid.innerHTML = '';
+
+      if (savedBooksCache.length === 0) {
+        emptyState.classList.remove('hidden');
+        return;
+      }
+
+      emptyState.classList.add('hidden');
+
+      savedBooksCache.forEach(book => {
+        const card = document.createElement('div');
+        card.className = 'bg-slate-50 border border-slate-200 hover:border-indigo-300 rounded-2xl p-4 flex flex-col justify-between transition shadow-2xs';
+
+        card.innerHTML = `
+          <div>
+            <div class="flex items-start justify-between gap-2 mb-2">
+              <span class="inline-flex items-center px-2.5 py-0.5 rounded-lg text-xs font-bold bg-indigo-100 text-indigo-800">
+                PDF &bull; ${book.totalPages} Hal
+              </span>
+              <span class="text-xs text-slate-400">${escapeHtml(book.fileSize)}</span>
+            </div>
+            <h4 class="font-bold text-sm text-slate-900 line-clamp-2 mb-1.5" title="${escapeHtml(book.title)}">
+              ${escapeHtml(book.title)}
+            </h4>
+            <p class="text-xs text-slate-500 mb-3">
+              Diunggah: ${escapeHtml(book.uploadedAt)} &bull; ${(book.totalChars || 0).toLocaleString('id-ID')} karakter
+            </p>
+          </div>
+
+          <div class="flex items-center gap-2 pt-3 border-t border-slate-200/80">
+            <button onclick="openReaderModal('${book.id}')" class="flex-1 bg-indigo-700 hover:bg-indigo-800 text-white text-xs font-semibold py-2 px-3 rounded-xl transition flex items-center justify-center gap-1.5">
+              <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                <path stroke-linecap="round" stroke-linejoin="round" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+              </svg>
+              <span>Lihat Isi Halaman</span>
+            </button>
+            <button onclick="promptDeleteBook('${book.id}')" class="bg-white hover:bg-rose-50 text-rose-600 border border-slate-300 hover:border-rose-300 text-xs font-semibold py-2 px-3 rounded-xl transition" title="Hapus Buku">
+              Hapus Buku
+            </button>
+          </div>
+        `;
+
+        grid.appendChild(card);
+      });
+    }
+
+    function populateBookDropdown() {
+      const select = document.getElementById('select-sibi-book');
+      const currentVal = select.value;
+
+      select.innerHTML = `<option value="">-- Tanpa Buku Referensi (Pengetahuan Umum AI) --</option>`;
+
+      savedBooksCache.forEach(book => {
+        const opt = document.createElement('option');
+        opt.value = book.id;
+        opt.textContent = `${book.title} (${book.totalPages} Halaman)`;
+        select.appendChild(opt);
+      });
+
+      // Pertahankan pilihan sebelumnya jika buku masih ada
+      if (savedBooksCache.some(b => b.id === currentVal)) {
+        select.value = currentVal;
+      }
+      handleBookSelectionChange();
+    }
+
+    // ==================== KONTROL RENTANG HALAMAN REFERENSI ====================
+    function handleBookSelectionChange() {
+      const bookId = document.getElementById('select-sibi-book').value;
+      const panel = document.getElementById('page-range-panel');
+
+      if (!bookId) {
+        panel.classList.add('hidden');
+        return;
+      }
+
+      const book = savedBooksCache.find(b => b.id === bookId);
+      if (!book) {
+        panel.classList.add('hidden');
+        return;
+      }
+
+      panel.classList.remove('hidden');
+      document.getElementById('book-total-pages-label').textContent = `Total: ${book.totalPages} hal`;
+
+      const startInput = document.getElementById('input-page-start');
+      const endInput = document.getElementById('input-page-end');
+
+      startInput.max = book.totalPages;
+      endInput.max = book.totalPages;
+
+      if (parseInt(startInput.value) > book.totalPages || parseInt(startInput.value) < 1) {
+        startInput.value = 1;
+      }
+      if (parseInt(endInput.value) > book.totalPages || parseInt(endInput.value) < 1) {
+        endInput.value = Math.min(10, book.totalPages);
+      }
+
+      updateReferencePreview();
+    }
+
+    function getSelectedReferenceText() {
+      const bookId = document.getElementById('select-sibi-book').value;
+      if (!bookId) return { book: null, text: '', pageCount: 0, start: 0, end: 0 };
+
+      const book = savedBooksCache.find(b => b.id === bookId);
+      if (!book) return { book: null, text: '', pageCount: 0, start: 0, end: 0 };
+
+      const start = Math.max(1, parseInt(document.getElementById('input-page-start').value) || 1);
+      const end = Math.min(book.totalPages, parseInt(document.getElementById('input-page-end').value) || start);
+
+      if (start > end) {
+        return { book, text: '', pageCount: 0, start, end, error: 'Halaman awal tidak boleh lebih besar dari halaman akhir.' };
+      }
+
+      const selectedPages = book.pages.filter(p => p.pageNum >= start && p.pageNum <= end);
+      const combinedText = selectedPages
+        .map(p => `[--- HALAMAN ${p.pageNum} ---]\n${p.text}`)
+        .join('\n\n');
+
+      return {
+        book,
+        text: combinedText,
+        pageCount: selectedPages.length,
+        start,
+        end
+      };
+    }
+
+    function updateReferencePreview() {
+      const info = getSelectedReferenceText();
+      const countEl = document.getElementById('ref-char-count');
+      const warnEl = document.getElementById('ref-range-warning');
+
+      if (info.error) {
+        warnEl.textContent = info.error;
+        warnEl.classList.remove('hidden');
+        countEl.textContent = 'Rentang halaman tidak valid';
+        return;
+      }
+
+      warnEl.classList.add('hidden');
+      const charLen = info.text.length;
+      countEl.textContent = `${info.pageCount} halaman (~${charLen.toLocaleString('id-ID')} karakter)`;
+
+      if (charLen > 120000) {
+        warnEl.textContent = 'Catatan: Materi cukup panjang (>120.000 karakter). Pertimbangkan mempersempit rentang halaman agar fokus pada 1 bab/subbab.';
+        warnEl.classList.remove('hidden');
+      }
+    }
+
+    // ==================== MODAL READER (LIHAT ISI HALAMAN BUKU) ====================
+    function openReaderModal(bookId) {
+      const book = savedBooksCache.find(b => b.id === bookId);
+      if (!book) return;
+
+      activeReaderBook = book;
+      activeReaderPage = 1;
+
+      document.getElementById('reader-book-title').textContent = book.title;
+      document.getElementById('reader-book-meta').textContent = `${book.fileName} • Total ${book.totalPages} Halaman`;
+      document.getElementById('reader-max-page').textContent = `/ ${book.totalPages}`;
+      document.getElementById('reader-page-input').max = book.totalPages;
+
+      renderReaderPage();
+      document.getElementById('reader-modal').classList.remove('hidden');
+    }
+
+    function openSelectedBookReader() {
+      const bookId = document.getElementById('select-sibi-book').value;
+      if (!bookId) return;
+      openReaderModal(bookId);
+
+      // Langsung lompat ke halaman awal yang sedang dipilih di form
+      const startPage = parseInt(document.getElementById('input-page-start').value) || 1;
+      jumpToReaderPage(startPage);
+    }
+
+    function closeReaderModal() {
+      document.getElementById('reader-modal').classList.add('hidden');
+      activeReaderBook = null;
+    }
+
+    function changeReaderPage(delta) {
+      if (!activeReaderBook) return;
+      const target = activeReaderPage + delta;
+      if (target >= 1 && target <= activeReaderBook.totalPages) {
+        activeReaderPage = target;
+        renderReaderPage();
+      }
+    }
+
+    function jumpToReaderPage(val) {
+      if (!activeReaderBook) return;
+      let num = parseInt(val) || 1;
+      num = Math.max(1, Math.min(activeReaderBook.totalPages, num));
+      activeReaderPage = num;
+      renderReaderPage();
+    }
+
+    function renderReaderPage() {
+      if (!activeReaderBook) return;
+      const pageObj = activeReaderBook.pages.find(p => p.pageNum === activeReaderPage);
+      const text = pageObj && pageObj.text ? pageObj.text : '(Halaman ini tidak memiliki teks yang dapat diekstrak / kemungkinan hanya berisi gambar sampul atau ilustrasi penuh)';
+
+      document.getElementById('reader-page-input').value = activeReaderPage;
+      document.getElementById('reader-page-indicator').textContent = `Halaman ${activeReaderPage} dari ${activeReaderBook.totalPages}`;
+      document.getElementById('reader-page-chars').textContent = `${text.length.toLocaleString('id-ID')} karakter`;
+      document.getElementById('reader-page-text').textContent = text;
+    }
+
+    function useCurrentBookInGenerator() {
+      if (!activeReaderBook) return;
+      const bookId = activeReaderBook.id;
+      const currentPage = activeReaderPage;
+      const maxPage = activeReaderBook.totalPages;
+
+      closeReaderModal();
+      switchTab('generator');
+
+      const select = document.getElementById('select-sibi-book');
+      select.value = bookId;
+      handleBookSelectionChange();
+
+      document.getElementById('input-page-start').value = currentPage;
+      document.getElementById('input-page-end').value = Math.min(currentPage + 7, maxPage);
+      updateReferencePreview();
+
+      showToast(`Buku dipilih mulai halaman ${currentPage}.`, 'info');
+    }
+
+    // ==================== HAPUS BUKU DENGAN MODAL KONFIRMASI ====================
+    function promptDeleteBook(bookId) {
+      const book = savedBooksCache.find(b => b.id === bookId);
+      if (!book) return;
+
+      pendingDeleteBookId = bookId;
+      document.getElementById('confirm-book-name').textContent = `Apakah Anda yakin ingin menghapus "${book.title}" dari penyimpanan lokal browser?`;
+      document.getElementById('confirm-modal').classList.remove('hidden');
+
+      document.getElementById('btn-confirm-delete').onclick = async () => {
+        if (pendingDeleteBookId) {
+          await deleteBookFromIndexedDB(pendingDeleteBookId);
+          await refreshBooksLibrary();
+          showToast('Buku berhasil dihapus dari Pustaka SIBI.', 'info');
+        }
+        closeConfirmModal();
+      };
+    }
+
+    function closeConfirmModal() {
+      document.getElementById('confirm-modal').classList.add('hidden');
+      pendingDeleteBookId = null;
+    }
+
+    // ==================== FORM HELPER ====================
+    function toggleCustomMapel() {
+      const select = document.getElementById('select-mapel');
+      const customInput = document.getElementById('input-mapel-custom');
+      if (select.value === 'Lainnya') {
+        customInput.classList.remove('hidden');
+        customInput.required = true;
+      } else {
+        customInput.classList.add('hidden');
+        customInput.required = false;
+      }
+    }
+
+    // ==================== INTEGRASI GEMINI API (GENERATOR MODUL AJAR) ====================
+    async function generateModulAjar() {
+      const apiKey = (localStorage.getItem(STORAGE_KEYS.API_KEY) || '').trim();
+      if (!apiKey) {
+        showToast('Silakan masukkan Gemini API Key terlebih dahulu di Pengaturan.', 'warning');
+        openSettingsModal();
+        return;
+      }
+
+      // Ambil nilai input form
+      const guru = document.getElementById('input-guru').value.trim();
+      const sekolah = document.getElementById('input-sekolah').value.trim();
+      const jenjang = document.getElementById('select-jenjang').value;
+      const mapelSelect = document.getElementById('select-mapel').value;
+      const mapel = mapelSelect === 'Lainnya'
+        ? document.getElementById('input-mapel-custom').value.trim()
+        : mapelSelect;
+      const topik = document.getElementById('input-topik').value.trim();
+      const alokasi = document.getElementById('input-alokasi').value.trim();
+      const semester = document.getElementById('input-semester').value.trim();
+      const catatan = document.getElementById('input-catatan').value.trim();
+
+      // Ambil model pembelajaran terpilih
+      const checkedModels = Array.from(document.querySelectorAll('input[name="model_pembelajaran"]:checked'))
+        .map(cb => cb.value);
+      const modelStr = checkedModels.length > 0
+        ? checkedModels.join(', ')
+        : 'Pembelajaran Aktif & Berpusat pada Peserta Didik';
+
+      // Ambil materi referensi SIBI jika dipilih
+      const refInfo = getSelectedReferenceText();
+      if (refInfo.error) {
+        showToast(refInfo.error, 'error');
+        return;
+      }
+
+      // Ubah tampilan ke state Loading
+      const btnGenerate = document.getElementById('btn-generate');
+      btnGenerate.disabled = true;
+      btnGenerate.classList.add('opacity-70', 'cursor-not-allowed');
+
+      document.getElementById('modul-empty-state').classList.add('hidden');
+      document.getElementById('modul-result-container').classList.add('hidden');
+      document.getElementById('modul-loading-state').classList.remove('hidden');
+
+      // Susun Prompt Komprehensif untuk Gemini 2.5 Flash
+      const referensiSection = refInfo.book
+        ? `SUMBER REFERENSI UTAMA (BUKU RESMI SIBI KEMENDIKBUDRISTEK):
+Judul Buku: "${refInfo.book.title}"
+Rentang Halaman: Halaman ${refInfo.start} sampai ${refInfo.end}
+Isi Teks Ekstraksi Buku SIBI:
+"""
+${refInfo.text.slice(0, 150000)}
+"""
+INSTRUKSI KHUSUS REFERENSI: Gunakan konsep, istilah, contoh kasus, bacaan, dan aktivitas dari teks buku SIBI di atas sebagai landasan utama materi pembelajaran dan LKPD!`
+        : `SUMBER REFERENSI: Tidak ada file buku khusus yang dilampirkan. Gunakan Capaian Pembelajaran (CP) Kurikulum Merdeka terbaru yang relevan dengan jenjang dan mata pelajaran tersebut.`;
+
+      const prompt = `Anda adalah Pakar Pengembang Kurikulum Merdeka Indonesia dan Guru Penggerak profesional.
+Tugas Anda adalah menyusun dokumen **MODUL AJAR KURIKULUM MERDEKA** yang lengkap, sistematis, aplikatif, dan siap pakai oleh guru di kelas.
+
+DATA IDENTITAS & DESAIN PEMBELAJARAN:
+- Nama Penyusun: ${guru}
+- Satuan Pendidikan: ${sekolah}
+- Tahun Ajaran / Semester: ${semester}
+- Jenjang & Kelas / Fase: ${jenjang}
+- Mata Pelajaran: ${mapel}
+- Topik / Materi Pokok: ${topik}
+- Alokasi Waktu: ${alokasi}
+- Model & Pendekatan Pembelajaran: ${modelStr}
+- Catatan Tambahan Guru: ${catatan || 'Tidak ada'}
+
+${referensiSection}
+
+FORMAT OUTPUT WAJIB (Gunakan Markdown yang sangat rapi, jelas, dan terstruktur tanpa basa-basi pembuka/penutup di luar dokumen):
+
+## A. INFORMASI UMUM
+1. **Identitas Modul** (Sajikan dalam tabel 2 kolom berisi Nama Penyusun, Satuan Pendidikan, Tahun/Semester, Jenjang/Kelas/Fase, Mata Pelajaran, Topik/Materi Pokok, Alokasi Waktu, dan Sumber Referensi Buku SIBI jika ada).
+2. **Kompetensi Awal** (Pengetahuan/keterampilan prasyarat yang perlu dimiliki peserta didik).
+3. **Profil Pelajar Pancasila** (Pilih 3–4 dimensi yang paling relevan beserta deskripsi penerapannya dalam pembelajaran ini).
+4. **Sarana dan Prasarana** (Media, alat, bahan, dan sumber belajar konkret).
+5. **Target Peserta Didik** (Peserta didik reguler/tipikal, peserta didik dengan kesulitan belajar, dan peserta didik dengan pencapaian tinggi).
+6. **Model & Pendekatan Pembelajaran** (${modelStr}).
+
+## B. KOMPONEN INTI
+1. **Tujuan Pembelajaran (TP)** (Dirumuskan dengan jelas mengandung unsur Audience, Behavior, Condition, Degree / ABCD dan selaras dengan materi buku SIBI).
+2. **Pemahaman Bermakna** (Manfaat kontekstual yang akan diperoleh peserta didik dalam kehidupan sehari-hari).
+3. **Pertanyaan Pemantik** (3–4 pertanyaan terbuka yang memicu rasa ingin tahu dan berpikir kritis).
+4. **Kegiatan Pembelajaran** (Susun secara rinci dan operasional dalam bentuk **Tabel Langkah Pembelajaran** dengan kolom: Tahap & Estimasi Waktu | Deskripsi Kegiatan Guru & Peserta Didik | Muatan Diferensiasi / Profil Pelajar Pancasila):
+   - **Kegiatan Pendahuluan** (Orientasi, apersepsi mengaitkan materi sebelumnya/buku SIBI, motivasi, penyampaian tujuan).
+   - **Kegiatan Inti** (Wajib memunculkan secara eksplisit tahapan/sintaks dari model pembelajaran **${modelStr}** dan aktivitas eksplorasi materi dari buku SIBI).
+   - **Kegiatan Penutup** (Refleksi peserta didik & guru, kesimpulan bersama, umpan balik, tindak lanjut, dan doa penutup).
+
+## C. ASESMEN & RUBRIK PENILAIAN
+1. **Asesmen Diagnostik (Awal Pembelajaran)** (Pertanyaan/teknik pemetaan kesiapan belajar).
+2. **Asesmen Formatif (Selama Proses Pembelajaran)** (Sajikan dalam **Tabel Rubrik Penilaian Sikap & Keterampilan/Diskusi** lengkap dengan kriteria skor 4 = Sangat Baik, 3 = Baik, 2 = Cukup, 1 = Perlu Bimbingan).
+3. **Asesmen Sumatif (Akhir Pembelajaran)** (Buat 5 butir soal evaluasi berbasis HOTS/kontekstual sesuai materi buku SIBI beserta kunci jawaban dan pedoman penskoran).
+
+## D. PENGAYAAN, REMEDIAL, DAN LAMPIRAN
+1. **Kegiatan Pengayaan & Remedial** (Langkah konkret bagi peserta didik yang sudah melampaui TP maupun yang belum mencapai TP).
+2. **Ringkasan Bahan Bacaan Guru & Peserta Didik** (Rangkuman materi inti yang disarikan langsung dari halaman buku SIBI terpilih).
+3. **Lembar Kerja Peserta Didik (LKPD) Singkat** (Siap cetak berisi Judul LKPD, Tujuan, Petunjuk Kerja, dan 3–4 langkah tugas/tabel pengamatan untuk dikerjakan peserta didik).`;
+
+      try {
+        const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${encodeURIComponent(apiKey)}`;
+
+        const response = await fetch(endpoint, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({
+            contents: [
+              {
+                parts: [{ text: prompt }]
+              }
+            ],
+            generationConfig: {
+              temperature: 0.65,
+              maxOutputTokens: 8192
+            }
+          })
+        });
+
+        const data = await response.json();
+
+        if (!response.ok) {
+          const errMsg = data?.error?.message || `HTTP Error ${response.status}`;
+          throw new Error(errMsg);
+        }
+
+        const generatedText = data?.candidates?.[0]?.content?.parts?.[0]?.text;
+        if (!generatedText) {
+          throw new Error('AI tidak mengembalikan teks. Silakan coba lagi.');
+        }
+
+        // Simpan hasil ke state
+        currentGeneratedMarkdown = generatedText;
+        currentModulMeta = {
+          guru,
+          sekolah,
+          jenjang,
+          mapel,
+          topik,
+          alokasi,
+          semester,
+          bookTitle: refInfo.book ? `${refInfo.book.title} (Hal. ${refInfo.start}-${refInfo.end})` : 'Kurikulum Merdeka Umum'
+        };
+
+        // Render ke UI
+        renderGeneratedModul(generatedText, currentModulMeta);
+        showToast('Modul Ajar Kurikulum Merdeka berhasil disusun!', 'success');
+
+      } catch (err) {
+        console.error('Gemini API Error:', err);
+        document.getElementById('modul-loading-state').classList.add('hidden');
+        document.getElementById('modul-empty-state').classList.remove('hidden');
+        showToast(`Gagal membuat modul: ${err.message}`, 'error');
+      } finally {
+        btnGenerate.disabled = false;
+        btnGenerate.classList.remove('opacity-70', 'cursor-not-allowed');
+      }
+    }
+
+    function renderGeneratedModul(markdownText, meta) {
+      document.getElementById('modul-loading-state').classList.add('hidden');
+      document.getElementById('modul-empty-state').classList.add('hidden');
+      document.getElementById('modul-result-container').classList.remove('hidden');
+
+      document.getElementById('doc-header-title').textContent = `MODUL AJAR ${meta.mapel.toUpperCase()}`;
+      document.getElementById('doc-header-subtitle').textContent = `${meta.sekolah} • ${meta.jenjang} • Topik: ${meta.topik}`;
+
+      const renderArea = document.getElementById('modul-render-area');
+      renderArea.innerHTML = marked.parse(markdownText);
+
+      // Aktifkan tombol ekspor & salin
+      document.getElementById('btn-export-word').disabled = false;
+      document.getElementById('btn-copy-text').disabled = false;
+      document.getElementById('btn-print-pdf').disabled = false;
+    }
+
+    // ==================== EKSPOR KE MICROSOFT WORD (.DOC) ====================
+    function exportToWord() {
+      if (!currentGeneratedMarkdown || !currentModulMeta) {
+        showToast('Belum ada Modul Ajar yang dihasilkan untuk diekspor.', 'warning');
+        return;
+      }
+
+      const renderedHtml = document.getElementById('modul-render-area').innerHTML;
+      const meta = currentModulMeta;
+
+      // Dokumen HTML berstandar Microsoft Word XML (Ukuran Kertas A4 & Tabel Rapi)
+      const wordDocumentHtml = `
+<html xmlns:o='urn:schemas-microsoft-com:office:office'
+      xmlns:w='urn:schemas-microsoft-com:office:word'
+      xmlns='http://www.w3.org/TR/REC-html40'>
+<head>
+  <meta charset='utf-8'>
+  <title>Modul Ajar - ${escapeHtml(meta.topik)}</title>
+  <!--[if gte mso 9]>
+  <xml>
+    <w:WordDocument>
+      <w:View>Print</w:View>
+      <w:Zoom>100</w:Zoom>
+      <w:DoNotOptimizeForBrowser/>
+    </w:WordDocument>
+  </xml>
+  <![endif]-->
+  <style>
+    @page WordSection1 {
+      size: 21cm 29.7cm;
+      margin: 2cm 2cm 2cm 2cm;
+      mso-header-margin: 1.25cm;
+      mso-footer-margin: 1.25cm;
+      mso-paper-source: 0;
+    }
+    div.WordSection1 {
+      page: WordSection1;
+    }
+    body {
+      font-family: 'Calibri', 'Arial', sans-serif;
+      font-size: 11pt;
+      line-height: 1.5;
+      color: #111827;
+    }
+    .kop-dokumen {
+      text-align: center;
+      border-bottom: 2.5pt solid #1e1b4b;
+      padding-bottom: 10pt;
+      margin-bottom: 16pt;
+    }
+    .kop-sub {
+      font-size: 10pt;
+      font-weight: bold;
+      color: #3730a3;
+      text-transform: uppercase;
+      letter-spacing: 1pt;
+      margin: 0;
+    }
+    .kop-judul {
+      font-size: 16pt;
+      font-weight: bold;
+      color: #000000;
+      margin: 4pt 0;
+    }
+    .kop-meta {
+      font-size: 10pt;
+      color: #374151;
+      margin: 0;
+    }
+    h1 {
+      font-size: 14pt;
+      font-weight: bold;
+      color: #1e1b4b;
+      margin-top: 14pt;
+      margin-bottom: 6pt;
+    }
+    h2 {
+      font-size: 12pt;
+      font-weight: bold;
+      color: #1e1b4b;
+      background-color: #eef2ff;
+      padding: 5pt 8pt;
+      border-left: 4pt solid #3730a3;
+      margin-top: 16pt;
+      margin-bottom: 8pt;
+    }
+    h3 {
+      font-size: 11pt;
+      font-weight: bold;
+      color: #111827;
+      margin-top: 10pt;
+      margin-bottom: 4pt;
+    }
+    p {
+      margin-top: 0;
+      margin-bottom: 6pt;
+      text-align: justify;
+    }
+    ul, ol {
+      margin-top: 0;
+      margin-bottom: 8pt;
+      padding-left: 20pt;
+    }
+    li {
+      margin-bottom: 3pt;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 8pt;
+      margin-bottom: 12pt;
+      font-size: 10pt;
+    }
+    th {
+      background-color: #312e81;
+      color: #ffffff;
+      font-weight: bold;
+      text-align: left;
+      padding: 6pt 8pt;
+      border: 1pt solid #000000;
+    }
+    td {
+      padding: 5pt 8pt;
+      border: 1pt solid #000000;
+      vertical-align: top;
+    }
+  </style>
+</head>
+<body>
+  <div class="WordSection1">
+    <div class="kop-dokumen">
+      <p class="kop-sub">PERANGKAT AJAR KURIKULUM MERDEKA</p>
+      <p class="kop-judul">MODUL AJAR ${escapeHtml(meta.mapel.toUpperCase())}</p>
+      <p class="kop-meta">${escapeHtml(meta.sekolah)} &bull; ${escapeHtml(meta.jenjang)} &bull; ${escapeHtml(meta.semester)}</p>
+    </div>
+    ${renderedHtml}
+  </div>
+</body>
+</html>`;
+
+      const blob = new Blob(['\ufeff', wordDocumentHtml], {
+        type: 'application/msword;charset=utf-8'
+      });
+
+      const safeMapel = meta.mapel.replace(/[^a-zA-Z0-9]/g, '_').replace(/_+/g, '_');
+      const safeTopik = meta.topik.slice(0, 35).replace(/[^a-zA-Z0-9]/g, '_').replace(/_+/g, '_');
+      const filename = `Modul_Ajar_${safeMapel}_${safeTopik}.doc`;
+
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = filename;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(url);
+
+      showToast(`File Word "${filename}" berhasil diunduh!`, 'success');
+    }
+
+    // ==================== SALIN TEKS KE CLIPBOARD ====================
+    function copyModulText() {
+      if (!currentGeneratedMarkdown) {
+        showToast('Belum ada teks Modul Ajar untuk disalin.', 'warning');
+        return;
+      }
+
+      // Gunakan textarea sementara + document.execCommand('copy') agar kompatibel penuh di semua iFrame & browser
+      const tempTextarea = document.createElement('textarea');
+      tempTextarea.value = currentGeneratedMarkdown;
+      tempTextarea.style.position = 'fixed';
+      tempTextarea.style.left = '-9999px';
+      document.body.appendChild(tempTextarea);
+      tempTextarea.select();
+
+      try {
+        const successful = document.execCommand('copy');
+        if (successful) {
+          showToast('Teks Modul Ajar berhasil disalin ke clipboard!', 'success');
+        } else {
+          showToast('Gagal menyalin teks. Silakan blok teks secara manual.', 'error');
+        }
+      } catch (err) {
+        console.error('Copy error:', err);
+        showToast('Browser memblokir penyalinan otomatis.', 'error');
+      } finally {
+        document.body.removeChild(tempTextarea);
+      }
+    }
+  </script>
+</body>
+</html>
